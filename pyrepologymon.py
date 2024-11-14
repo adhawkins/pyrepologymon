@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 
 import click
+import logging
 import requests
 import sys
 
 from packaging import version
-
-
-def debugPrint(message, debug):
-    if debug:
-        print(message, file=sys.stderr)
 
 
 @click.command()
@@ -17,27 +13,29 @@ def debugPrint(message, debug):
 @click.option("--repo", help="repo", default="alpine_edge")
 @click.option("--debug/--no-debug", default=False, help="Debug")
 def monitor(maintainer, repo, debug):
+    if debug:
+        logging.basicConfig(level=logging.DEBUG)
+
     request = (
         f"https://repology.org/api/v1/projects/?maintainer={maintainer}&inrepo={repo}"
     )
 
-    debugPrint(f"Request: '{request}", debug)
+    logging.debug(f"Request: '{request}")
     response = requests.get(request)
 
     if response.status_code == requests.codes.ok:
         packages = response.json()
 
         for package in packages.keys():
-            debugPrint(f"Processing {package}", debug)
+            logging.debug(f"Processing {package}")
 
             highestVersion = None
             checkVersion = None
 
             for packageRepo in packages[package]:
                 if "openpkg" not in packageRepo["repo"]:
-                    debugPrint(
+                    logging.debug(
                         f"\tProcessing repo {packageRepo['repo']}, version: {packageRepo['version']}",
-                        debug,
                     )
 
                     try:
@@ -52,13 +50,14 @@ def monitor(maintainer, repo, debug):
                     except version.InvalidVersion as e:
                         pass
 
-            debugPrint(f"\tCheck: {checkVersion}, highest: {highestVersion}", debug)
+            logging.debug(
+                f"\tCheck: {checkVersion}, highest: {highestVersion}")
             if checkVersion < highestVersion:
                 print(
                     f"Package {package} out of date ({checkVersion} < {highestVersion})"
                 )
     else:
-        debugPrint(f"Status code: {data.status_code}", debug)
+        print(f"Request error, status code: {response.status_code}")
 
 
 if __name__ == "__main__":
