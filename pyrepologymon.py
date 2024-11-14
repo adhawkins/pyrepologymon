@@ -20,8 +20,12 @@ def monitor(maintainer, repo, debug):
         f"https://repology.org/api/v1/projects/?maintainer={maintainer}&inrepo={repo}"
     )
 
+    headers = {
+        'User-Agent': 'pyrepologymon https://github.com/adhawkins/pyrepologymon'
+    }
+
     logging.debug(f"Request: '{request}")
-    response = requests.get(request)
+    response = requests.get(request, headers=headers)
 
     if response.status_code == requests.codes.ok:
         packages = response.json()
